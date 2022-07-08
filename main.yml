@@ -1,0 +1,24 @@
+---
+- name: "Installing LEMP on ubuntu"
+  hosts: ubuntu
+  become: yes
+  vars_files:
+    - packages-nginx-php.vars
+    - secret.vars
+  tasks:
+    - name: "Nginx and php8.1-fpm and extensions Installation"
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      register: package
+      
+    - name: "restart/enable-nginx-php8.1-fpm"
+      when: package.changed == true
+      service:
+        enabled: yes
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - nginx
+        - php8.1-fpm
