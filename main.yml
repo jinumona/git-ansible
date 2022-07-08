@@ -5,6 +5,7 @@
   vars_files:
     - packages-nginx-php.vars
     - secret.vars
+    - nginx-conf.vars
   tasks:
     - name: "Nginx and php8.1-fpm and extensions Installation"
       apt:
@@ -22,3 +23,44 @@
       with_items:
         - nginx
         - php8.1-fpm
+        
+    - name: "Creating Document root /var/www/{{ domain_name}}"
+      file:
+        group: "{{ nginx_group }}"
+        owner: "{{ nginx_user }}"
+        path: "/var/www/{{ domain_name }}"
+        state: directory
+
+
+    - name: "Creating nginx conf /etc/nginx/sites-available/{{ domain_name }}.conf"
+      template:
+        dest: "/etc/nginx/sites-available/{{ domain_name }}.conf"
+        src: vhost.tmpl
+      register: vhostavailable
+
+    - name: "Enabling nginx conf /etc/nginx/sites-available/{{ domain_name }}.conf"
+      file:
+        src: "/etc/nginx/sites-available/{{ domain_name }}.conf"
+        state: link
+        path: "/etc/nginx/sites-enabled/{{ domain_name }}.conf"
+      register: vhostenable
+
+    - name: "restart/enable-nginx-php8.1-fpm"
+      when: vhostavailable.changed == true or vhostenable == true
+      service:
+        enabled: yes
+        name: "{{ item }}"
+        state: restarted
+      with_items:
+        - nginx
+        - php8.1-fpm
+
+    - name: "Copying info.php file"
+      copy:
+        dest: "/var/www/{{ domain_name }}"
+        src: "{{ item }}"
+        group: "{{ nginx_group }}"
+        owner: "{{ nginx_user }}"
+      with_items:
+        - info.php
+        - info.html
