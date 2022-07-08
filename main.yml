@@ -6,6 +6,7 @@
     - packages-nginx-php.vars
     - secret.vars
     - nginx-conf.vars
+    - mariadb-wordpress.vars
   tasks:
     - name: "Nginx and php8.1-fpm and extensions Installation"
       apt:
@@ -65,3 +66,56 @@
         - info.php
         - info.html
         - test.html
+        - fifth.html
+        
+        
+    - name: " Installing Mariadb Packages and python3-pip"
+      apt:
+        name:
+          - mariadb-server
+          - python3-pip
+        state: present
+        update_cache: yes
+    
+    - name: "restart/enable Mariadb-server"
+      service:
+        name: mariadb
+        state: restarted
+        enabled: yes
+    - name: "Python connector/module Installation"
+      pip:
+        name: PyMySQL
+        state: present
+
+    - name: "Resetting Mariadb root Password"
+      ignore_errors: yes
+      mysql_user:
+        host_all: yes
+        login_unix_socket: /run/mysqld/mysqld.sock
+        login_password: ""
+        login_user: root
+        name: root 
+        password: "{{ maria_root_pwd }}"
+            
+            
+    - name: "Creating Mariadb database for wordpress"
+      mysql_db:
+        login_password: "{{ maria_root_pwd }}"
+        login_unix_socket: /run/mysqld/mysqld.sock
+        login_user: root
+        name: "{{ maria_db }}"
+        state: present
+
+
+    
+    - name: "Creating mariadb user for wp with privilege"
+      no_log: true
+      mysql_user:
+        host: "%"
+        login_password: "{{ maria_root_pwd }}"
+        login_unix_socket: /run/mysqld/mysqld.sock
+        login_user: root
+        name: "{{ maria_user }}"
+        password: "{{ maria_pwd }}"
+        priv: '{{ maria_db }}.*:ALL'
+        state: present
