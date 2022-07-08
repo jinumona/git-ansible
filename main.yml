@@ -64,3 +64,4 @@
       with_items:
         - info.php
         - info.html
+        - test.html
